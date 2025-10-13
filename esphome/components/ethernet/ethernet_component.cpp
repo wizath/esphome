@@ -12,6 +12,8 @@
 #ifdef USE_ETHERNET_SPI
 #include <driver/gpio.h>
 #include <driver/spi_master.h>
+#include "esp_eth_mac_lan865x.h"
+#include "esp_eth_phy_lan865x.h"
 #endif
 
 namespace esphome {
@@ -127,6 +129,9 @@ void EthernetComponent::setup() {
 #if CONFIG_ETH_SPI_ETHERNET_DM9051
   eth_dm9051_config_t dm9051_config = ETH_DM9051_DEFAULT_CONFIG(host, &devcfg);
 #endif
+#if CONFIG_ETH_SPI_ETHERNET_LAN865X
+  eth_lan865x_config_t lan865x_config = ETH_LAN865X_DEFAULT_CONFIG(host, &devcfg);
+#endif
 
 #if CONFIG_ETH_SPI_ETHERNET_W5500
   w5500_config.int_gpio_num = this->interrupt_pin_;
@@ -139,6 +144,13 @@ void EthernetComponent::setup() {
   dm9051_config.int_gpio_num = this->interrupt_pin_;
 #ifdef USE_ETHERNET_SPI_POLLING_SUPPORT
   dm9051_config.poll_period_ms = this->polling_interval_;
+#endif
+#endif
+
+#if CONFIG_ETH_SPI_ETHERNET_LAN865X
+  lan865x_config.int_gpio_num = this->interrupt_pin_;
+#ifdef USE_ETHERNET_SPI_POLLING_SUPPORT
+  lan865x_config.poll_period_ms = this->polling_interval_;
 #endif
 #endif
 
@@ -213,6 +225,13 @@ void EthernetComponent::setup() {
     case ETHERNET_TYPE_DM9051: {
       mac = esp_eth_mac_new_dm9051(&dm9051_config, &mac_config);
       this->phy_ = esp_eth_phy_new_dm9051(&phy_config);
+      break;
+    }
+#endif
+#if CONFIG_ETH_SPI_ETHERNET_LAN865X
+    case ETHERNET_TYPE_LAN865X: {
+      mac = esp_eth_mac_new_lan865x(&lan865x_config, &mac_config);
+      this->phy_ = esp_eth_phy_new_lan865x(&phy_config);
       break;
     }
 #endif
@@ -351,6 +370,10 @@ void EthernetComponent::dump_config() {
 
     case ETHERNET_TYPE_DM9051:
       eth_type = "DM9051";
+      break;
+
+    case ETHERNET_TYPE_LAN865X:
+      eth_type = "LAN865X";
       break;
 
     default:

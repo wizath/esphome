@@ -75,6 +75,7 @@ ETHERNET_TYPES = {
     "W5500": EthernetType.ETHERNET_TYPE_W5500,
     "OPENETH": EthernetType.ETHERNET_TYPE_OPENETH,
     "DM9051": EthernetType.ETHERNET_TYPE_DM9051,
+    "LAN865X": EthernetType.ETHERNET_TYPE_LAN865X,
 }
 
 # PHY types that need compile-time defines for conditional compilation
@@ -84,7 +85,7 @@ _PHY_TYPE_TO_DEFINE = {
     # Add other PHY types here only if they need conditional compilation
 }
 
-SPI_ETHERNET_TYPES = ["W5500", "DM9051"]
+SPI_ETHERNET_TYPES = ["W5500", "DM9051", "LAN865X"]
 SPI_ETHERNET_DEFAULT_POLLING_INTERVAL = TimePeriodMilliseconds(milliseconds=10)
 
 emac_rmii_clock_mode_t = cg.global_ns.enum("emac_rmii_clock_mode_t")
@@ -228,7 +229,10 @@ SPI_SCHEMA = BASE_SCHEMA.extend(
             cv.Optional(CONF_INTERRUPT_PIN): pins.internal_gpio_input_pin_number,
             cv.Optional(CONF_RESET_PIN): pins.internal_gpio_output_pin_number,
             cv.Optional(CONF_CLOCK_SPEED, default="26.67MHz"): cv.All(
-                cv.frequency, cv.int_range(int(8e6), int(80e6))
+                cv.frequency,
+                cv.int_range(
+                    int(1e6), int(80e6)
+                ),  # Allow 1-80MHz (LAN865X needs slower speeds)
             ),
             # Set default value (SPI_ETHERNET_DEFAULT_POLLING_INTERVAL) at _validate()
             cv.Optional(CONF_POLLING_INTERVAL): cv.All(
@@ -252,6 +256,7 @@ CONFIG_SCHEMA = cv.All(
             "W5500": SPI_SCHEMA,
             "OPENETH": BASE_SCHEMA,
             "DM9051": SPI_SCHEMA,
+            "LAN865X": SPI_SCHEMA,
         },
         upper=True,
     ),
