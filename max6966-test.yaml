@@ -1,0 +1,146 @@
+esphome:
+  name: max6966-test
+  friendly_name: MAX6966 LED Driver Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO12
+  miso_pin: GPIO13
+
+max6966:
+  - id: led_driver
+    cs_pin: GPIO15
+    num_ports: 10
+
+output:
+  - platform: max6966
+    id: led0
+    max6966_id: led_driver
+    channel: 0
+    full_current: true
+
+  - platform: max6966
+    id: led1
+    max6966_id: led_driver
+    channel: 1
+    full_current: false
+
+  - platform: max6966
+    id: led2
+    max6966_id: led_driver
+    channel: 2
+    full_current: true
+
+  - platform: max6966
+    id: led3
+    max6966_id: led_driver
+    channel: 3
+    full_current: true
+
+light:
+  - platform: monochromatic
+    name: "LED 0"
+    output: led0
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: monochromatic
+    name: "LED 1"
+    output: led1
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: monochromatic
+    name: "LED 2"
+    output: led2
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: monochromatic
+    name: "LED 3"
+    output: led3
+    restore_mode: RESTORE_DEFAULT_OFF
+
+switch:
+  - platform: output
+    name: "LED Port 0 Switch"
+    output: led0
+
+  - platform: gpio
+    pin: GPIO2
+    id: gpio2_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO4
+    id: gpio4_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO16
+    id: gpio16_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO17
+    id: gpio17_switch
+    restore_mode: ALWAYS_OFF
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          auto driver = id(led_driver);
+
+          // Read configuration register (0x10)
+          uint8_t config = driver->read_register(0x10);
+          ESP_LOGI("max6966", "Configuration register (0x10): 0x%02X", config);
+
+          // Read global current register (0x15)
+          uint8_t global_current = driver->read_register(0x15);
+          ESP_LOGI("max6966", "Global current register (0x15): 0x%02X", global_current);
+
+          // Read current output registers
+          uint8_t current_out70 = driver->read_register(0x13);
+          uint8_t current_out98 = driver->read_register(0x14);
+          ESP_LOGI("max6966", "Current OUT70 (0x13): 0x%02X, OUT98 (0x14): 0x%02X", current_out70, current_out98);
+
+          // Read a port register back
+          uint8_t port0_value = driver->read_register(0x00);
+          ESP_LOGI("max6966", "Port 0 register (0x00): 0x%02X", port0_value);
+
+  - interval: 2s
+    then:
+      - lambda: |-
+          static uint8_t cycle = 0;
+          auto driver = id(led_driver);
+
+          // Clear all ports first
+          for (uint8_t i = 0; i < 4; i++) {
+            driver->set_port(i, 0x00);
+          }
+
+          // Set ports based on current cycle
+          switch (cycle % 4) {
+            case 0:
+              driver->set_port(0, 0xFF);  // Port 0: Full on
+              ESP_LOGI("max6966", "Cycle %d: Port 0=FF (full on)", cycle);
+              break;
+            case 1:
+              driver->set_port(1, 0x80);  // Port 1: 50% PWM
+              ESP_LOGI("max6966", "Cycle %d: Port 1=80 (50%% PWM)", cycle);
+              break;
+            case 2:
+              driver->set_port(2, 0x02);  // Port 2: Static current
+              ESP_LOGI("max6966", "Cycle %d: Port 2=02 (static current)", cycle);
+              break;
+            case 3:
+              driver->set_port(3, 0x40);  // Port 3: 25% PWM
+              ESP_LOGI("max6966", "Cycle %d: Port 3=40 (25%% PWM)", cycle);
+              break;
+          }
+
+          cycle++;
