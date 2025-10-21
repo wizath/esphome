@@ -47,6 +47,18 @@ void HC138Component::setup() {
     ESP_LOGW(TAG, "HC138: No CS pin available - cs_ is nullptr");
   }
 
+#ifdef HC138_USE_SHARED_DELEGATE
+  // Create shared SPI delegate for all channels
+  ESP_LOGI(TAG, "HC138: Creating shared SPI delegate");
+  this->shared_delegate_ =
+      this->parent_->register_device(this, this->mode_, this->bit_order_, this->data_rate_, nullptr, false, false);
+  if (this->shared_delegate_ != nullptr) {
+    ESP_LOGI(TAG, "HC138: Shared delegate created successfully: %p", static_cast<void *>(this->shared_delegate_));
+  } else {
+    ESP_LOGE(TAG, "HC138: Failed to create shared delegate");
+  }
+#endif
+
   ESP_LOGI(TAG, "HC138: Setup complete");
 }
 

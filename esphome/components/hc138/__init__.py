@@ -91,6 +91,9 @@ async def to_code(config):
     if CONF_DATA_RATE in config:
         cg.add(var.set_data_rate(config[CONF_DATA_RATE]))
 
+    # Create shared SPI delegate for all channels
+    cg.add_define("HC138_USE_SHARED_DELEGATE")
+
     for conf in config[CONF_CHANNELS]:
         chan = cg.new_Pvariable(conf[CONF_BUS_ID])
         await cg.register_component(chan, config)

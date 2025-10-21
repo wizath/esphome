@@ -143,7 +143,7 @@ interval:
             ESP_LOGI("spi_test", "Channel %d: Product ID read: 0x%02X", current_channel, product_id);
           }
 
-          // Cycle through channels 0-3 for testing
-          current_channel = (current_channel + 1) % 4;
+          // Cycle through channels 0-7 with shared delegate
+          current_channel = (current_channel + 1) % 8;
           test_data++;
           ESP_LOGI("spi_test", "Next test cycle in 2 seconds...");
