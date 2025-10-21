@@ -14,10 +14,10 @@ class HC138Channel : public spi::SPIComponent {
   void set_channel(uint8_t channel) { channel_ = channel; }
   void set_parent(HC138Component *parent) { this->parent_ = parent; }
 
-  void setup() override {};
-  void dump_config() override {};
+  void setup() override{};
+  void dump_config() override{};
   spi::SPIDelegate *register_device(spi::SPIClient *device, spi::SPIMode mode, spi::SPIBitOrder bit_order,
-                                    uint32_t data_rate, GPIOPin *cs_pin) override;
+                                    uint32_t data_rate, GPIOPin *cs_pin, bool release_device, bool write_only) override;
 
  protected:
   uint8_t channel_;
@@ -36,12 +36,22 @@ class HC138Component : public Component,
   void setup() override;
   void select_channel(uint8_t channel);
 
+  // SPI parameter configuration methods
+  void set_bit_order(spi::SPIBitOrder order) { this->bit_order_ = order; }
+  void set_mode(spi::SPIMode mode) { this->mode_ = mode; }
+  void set_data_rate(uint32_t data_rate) { this->data_rate_ = data_rate; }
+
+  // Shared SPI delegate for all channels
+  void set_shared_delegate(spi::SPIDelegate *delegate) { shared_delegate_ = delegate; }
+
  protected:
   GPIOPin *a0_;
   GPIOPin *a1_;
   GPIOPin *a2_;
   HC138Channel *ch;
+  spi::SPIDelegate *shared_delegate_{nullptr};
   friend class HC138Channel;
+  friend class HC138SPIDelegate;
 };
 
 class HC138SPIDelegate : public spi::SPIDelegate {
