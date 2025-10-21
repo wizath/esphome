@@ -1,0 +1,163 @@
+esphome:
+  name: max6966-pwm-test
+  friendly_name: MAX6966 PWM Test with Open Drain
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO12
+  miso_pin: GPIO13
+
+max6966:
+  - id: led_driver
+    cs_pin: GPIO15
+    num_ports: 10
+
+# Configure MAX6966 outputs with open drain mode
+output:
+  - platform: max6966
+    id: port0_out
+    max6966_id: led_driver
+    channel: 0
+    full_current: true
+    open_drain: true
+
+  - platform: max6966
+    id: port1_out
+    max6966_id: led_driver
+    channel: 1
+    full_current: true
+    open_drain: true
+
+  - platform: max6966
+    id: port2_out
+    max6966_id: led_driver
+    channel: 2
+    full_current: true
+    open_drain: true
+
+  - platform: max6966
+    id: port3_out
+    max6966_id: led_driver
+    channel: 3
+    full_current: true
+    open_drain: true
+
+  - platform: max6966
+    id: port4_out
+    max6966_id: led_driver
+    channel: 4
+    full_current: true
+    open_drain: true
+
+# Light components for PWM control
+light:
+  - platform: monochromatic
+    name: "Port 0 LED"
+    output: port0_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 1 LED"
+    output: port1_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 2 LED"
+    output: port2_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 3 LED"
+    output: port3_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 4 LED"
+    output: port4_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+# Switch components for on/off control
+switch:
+  - platform: output
+    name: "Port 0 Switch"
+    output: port0_out
+
+  - platform: output
+    name: "Port 1 Switch"
+    output: port1_out
+
+  - platform: output
+    name: "Port 2 Switch"
+    output: port2_out
+
+  - platform: output
+    name: "Port 3 Switch"
+    output: port3_out
+
+  - platform: output
+    name: "Port 4 Switch"
+    output: port4_out
+
+# Continuous fade: 0% -> 100% -> 0% and repeat (open drain)
+interval:
+  - interval: 100ms
+    then:
+      - lambda: |-
+          static int16_t step = 0;
+          static bool rising = true;
+          auto driver = id(led_driver);
+
+          // For open drain: 0x01 = 100% (logic high), 0xFF = 0% (high-Z/off)
+          uint8_t pwm_value = 0;
+
+          if (rising) {
+            // Rising from 0% -> 100%: 0xFF -> 0x01
+            pwm_value = 0xFF - ((step * 0xFE) / 100);
+            step += 2;  // Increase by 2% each interval
+            if (step > 100) {
+              step = 100;
+              rising = false;
+              ESP_LOGI("max6966", "Peak reached: 100%% PWM (0x01)");
+            }
+          } else {
+            // Fading from 100% -> 0%: 0x01 -> 0xFF
+            pwm_value = 0x01 + ((step * 0xFE) / 100);
+            step -= 2;  // Decrease by 2% each interval
+            if (step < 0) {
+              step = 0;
+              rising = true;
+              ESP_LOGI("max6966", "Valley reached: 0%% PWM (0xFF)");
+            }
+          }
+
+          // Set all ports to the same PWM value for synchronized effect
+          driver->set_port(0, pwm_value);
+          driver->set_port(1, pwm_value);
+          driver->set_port(2, pwm_value);
+          driver->set_port(3, pwm_value);
+          driver->set_port(4, pwm_value);
+
+          // Calculate actual percentage for logging
+          uint8_t actual_percent = pwm_value == 0x01 ? 100 : (pwm_value == 0xFF ? 0 : ((0xFF - pwm_value) * 100 / 0xFE));
+
+          // Log progress at key points
+          if (step % 25 == 0) {
+            ESP_LOGI("max6966", "All ports: %d%% PWM (0x%02X) - %s",
+                     actual_percent,
+                     pwm_value,
+                     rising ? "rising" : "falling");
+          }
