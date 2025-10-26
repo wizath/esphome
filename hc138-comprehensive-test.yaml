@@ -1,0 +1,120 @@
+esphome:
+  name: hc138-comprehensive-test
+  friendly_name: HC138 Comprehensive Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer with all 8 channels
+hc138:
+  id: mux
+  spi_id: spi_bus
+  a0: GPIO2
+  a1: GPIO4
+  a2: GPIO16
+  channels:
+    - bus_id: hc138_ch0
+      channel: 0
+    - bus_id: hc138_ch1
+      channel: 1
+    - bus_id: hc138_ch2
+      channel: 2
+    - bus_id: hc138_ch3
+      channel: 3
+    - bus_id: hc138_ch4
+      channel: 4
+    - bus_id: hc138_ch5
+      channel: 5
+    - bus_id: hc138_ch6
+      channel: 6
+    - bus_id: hc138_ch7
+      channel: 7
+
+# SPI test devices on all 8 channels - each device is unaware of HC138
+spi_test:
+  - id: test_device_0
+    spi_id: hc138_ch0  # Device uses HC138 channel 0 transparently
+    cs_pin: GPIO15
+  - id: test_device_1
+    spi_id: hc138_ch1  # Device uses HC138 channel 1 transparently
+    cs_pin: GPIO17
+  - id: test_device_2
+    spi_id: hc138_ch2  # Device uses HC138 channel 2 transparently
+    cs_pin: GPIO18
+  - id: test_device_3
+    spi_id: hc138_ch3  # Device uses HC138 channel 3 transparently
+    cs_pin: GPIO19
+  - id: test_device_4
+    spi_id: hc138_ch4  # Device uses HC138 channel 4 transparently
+    cs_pin: GPIO21
+  - id: test_device_5
+    spi_id: hc138_ch5  # Device uses HC138 channel 5 transparently
+    cs_pin: GPIO22
+  - id: test_device_6
+    spi_id: hc138_ch6  # Device uses HC138 channel 6 transparently
+    cs_pin: GPIO23
+  - id: test_device_7
+    spi_id: hc138_ch7  # Device uses HC138 channel 7 transparently
+    cs_pin: GPIO25
+
+# Test HC138 channel switching - devices just use their SPI normally
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          static uint8_t channel = 0;
+
+          ESP_LOGI("hc138_comprehensive", "=== Testing HC138 channel %d ===", channel);
+
+          // Each device just uses SPI normally - HC138 switching is transparent
+          uint8_t test_data[] = {0x55, 0xAA, channel, 0xFF};
+
+          switch(channel) {
+            case 0:
+              id(test_device_0)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 0 (device unaware of HC138)");
+              break;
+            case 1:
+              id(test_device_1)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 1 (device unaware of HC138)");
+              break;
+            case 2:
+              id(test_device_2)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 2 (device unaware of HC138)");
+              break;
+            case 3:
+              id(test_device_3)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 3 (device unaware of HC138)");
+              break;
+            case 4:
+              id(test_device_4)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 4 (device unaware of HC138)");
+              break;
+            case 5:
+              id(test_device_5)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 5 (device unaware of HC138)");
+              break;
+            case 6:
+              id(test_device_6)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 6 (device unaware of HC138)");
+              break;
+            case 7:
+              id(test_device_7)->write_array(test_data, 4);
+              ESP_LOGI("hc138_comprehensive", "Sent test data on channel 7 (device unaware of HC138)");
+              break;
+          }
+
+          channel = (channel + 1) % 8;

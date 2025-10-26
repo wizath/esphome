@@ -1,0 +1,30 @@
+esphome:
+  name: hc138-minimal
+  friendly_name: HC138 Minimal Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus - HSPI (ESP32 pins: GPIO14=CLK, GPIO12=MISO, GPIO13=MOSI)
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer - minimal configuration, no channels
+hc138:
+  id: mux
+  spi_id: spi_bus
+  cs_pin: GPIO15
+  a0: GPIO2   # Address pin A0 = P0 == IO2
+  a1: GPIO4   # Address pin A1 = P1 == IO4
+  a2: GPIO16  # Address pin A2 = P2 == IO16
+
+# Just test HC138 setup without any channels or SPI devices

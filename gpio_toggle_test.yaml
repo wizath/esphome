@@ -1,0 +1,78 @@
+esphome:
+  name: gpio-toggle-test
+  friendly_name: GPIO Toggle Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Set GPIOs and SPI pins low on boot
+switch:
+  # GPIO pins for toggle testing
+  - platform: gpio
+    pin: GPIO2
+    id: gpio2_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO4
+    id: gpio4_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO16
+    id: gpio16_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO17
+    id: gpio17_switch
+    restore_mode: ALWAYS_OFF
+  # SPI pins for toggle testing
+  - platform: gpio
+    pin: GPIO15  # HSPI_CS0 == IO15
+    id: gpio15_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO14  # HSPI_CLK == IO14
+    id: gpio14_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO13  # HSPI_ID == IO13
+    id: gpio13_switch
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    pin: GPIO12  # HSPI_O == IO12
+    id: gpio12_switch
+    restore_mode: ALWAYS_OFF
+
+# GPIO and SPI pin toggling at different frequencies
+interval:
+  # GPIO pins
+  - interval: 100ms
+    then:
+      - switch.toggle: gpio2_switch
+  - interval: 200ms  # 2Hz (GPIO4/P1 == IO4)
+    then:
+      - switch.toggle: gpio4_switch
+  - interval: 300ms  # 5Hz (GPIO16/P2 == IO16)
+    then:
+      - switch.toggle: gpio16_switch
+  - interval: 400ms   # 10Hz (GPIO17/P3 == IO17)
+    then:
+      - switch.toggle: gpio17_switch
+  # SPI pins
+  - interval: 500ms  # ~3Hz (GPIO15/HSPI_CS0 == IO15)
+    then:
+      - switch.toggle: gpio15_switch
+  - interval: 600ms   # ~14Hz (GPIO14/HSPI_CLK == IO14)
+    then:
+      - switch.toggle: gpio14_switch
+  - interval: 700ms   # ~30Hz (GPIO13/HSPI_ID == IO13)
+    then:
+      - switch.toggle: gpio13_switch
+  - interval: 800ms   # 40Hz (GPIO12/HSPI_O == IO12)
+    then:
+      - switch.toggle: gpio12_switch
