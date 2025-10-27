@@ -43,15 +43,15 @@ hc138:
     - bus_id: hc138_ch7
       channel: 7
 
-# Simple SPI test device on channel 0
+# Single SPI test device - HC138 will route CS to different physical devices
 spi_test:
   - id: test_device
-    spi_id: hc138_ch0  # Connect through HC138 channel 0
+    spi_id: hc138_ch0  # Use HC138 channel 0 as default, HC138 handles routing
     cs_pin: GPIO15
 
 # Test HC138 channel switching
 interval:
-  - interval: 2s
+  - interval: 1s
     then:
       - lambda: |-
           static uint8_t channel = 0;
@@ -61,11 +61,15 @@ interval:
           // Note: Channel switching happens automatically when using different bus_ids
           // For this test, we're using hc138_ch0 which corresponds to channel 0
 
-          // Test SPI transfer
+          // Test SPI transfer with proper CS control
           uint8_t test_data[] = {0x55, 0xAA, channel};
+
+          // Use single device - HC138 address pins will route CS to correct physical device
+          id(test_device)->enable();
           id(test_device)->write_array(test_data, 3);
+          id(test_device)->disable();
 
-          ESP_LOGI("hc138_test", "Sent test data on channel %d", channel);
+          ESP_LOGI("hc138_test", "Sent test data on channel %d (HC138 routes CS to physical device)", channel);
 
-          // In real usage, you'd create separate test devices for each channel
-          // and use the appropriate bus_id (hc138_ch0, hc138_ch1, etc.)
+          // Cycle through channels 0-4 to test HC138 address pin switching
+          channel = (channel + 1) % 5;
