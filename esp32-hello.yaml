@@ -1,0 +1,18 @@
+esphome:
+  name: esp32-hello
+  friendly_name: ESP32 Hello World
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Example: Add a sensor to test
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 5s

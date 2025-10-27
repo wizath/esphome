@@ -1,0 +1,84 @@
+esphome:
+  name: hc138-multi-channel
+  friendly_name: HC138 Multi-Channel Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer like TCA9548A
+hc138:
+  id: mux
+  spi_id: spi_bus
+  a0: GPIO2
+  a1: GPIO4
+  a2: GPIO16
+  channels:
+    - bus_id: hc138_ch0
+      channel: 0
+    - bus_id: hc138_ch1
+      channel: 1
+    - bus_id: hc138_ch2
+      channel: 2
+    - bus_id: hc138_ch3
+      channel: 3
+
+# SPI test devices on different channels - each device is unaware of HC138
+spi_test:
+  - id: test_device_0
+    spi_id: hc138_ch0  # Device uses HC138 channel 0 transparently
+    cs_pin: GPIO15
+  - id: test_device_1
+    spi_id: hc138_ch1  # Device uses HC138 channel 1 transparently
+    cs_pin: GPIO17
+  - id: test_device_2
+    spi_id: hc138_ch2  # Device uses HC138 channel 2 transparently
+    cs_pin: GPIO18
+  - id: test_device_3
+    spi_id: hc138_ch3  # Device uses HC138 channel 3 transparently
+    cs_pin: GPIO19
+
+# Test HC138 channel switching - devices just use their SPI normally
+interval:
+  - interval: 3s
+    then:
+      - lambda: |-
+          static uint8_t channel = 0;
+
+          ESP_LOGI("hc138_multi", "=== Testing HC138 channel %d ===", channel);
+
+          // Each device just uses SPI normally - HC138 switching is transparent
+          uint8_t test_data[] = {0x55, 0xAA, channel};
+
+          switch(channel) {
+            case 0:
+              id(test_device_0)->write_array(test_data, 3);
+              ESP_LOGI("hc138_multi", "Sent test data on channel 0 (device unaware of HC138)");
+              break;
+            case 1:
+              id(test_device_1)->write_array(test_data, 3);
+              ESP_LOGI("hc138_multi", "Sent test data on channel 1 (device unaware of HC138)");
+              break;
+            case 2:
+              id(test_device_2)->write_array(test_data, 3);
+              ESP_LOGI("hc138_multi", "Sent test data on channel 2 (device unaware of HC138)");
+              break;
+            case 3:
+              id(test_device_3)->write_array(test_data, 3);
+              ESP_LOGI("hc138_multi", "Sent test data on channel 3 (device unaware of HC138)");
+              break;
+          }
+
+          channel = (channel + 1) % 4;

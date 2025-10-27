@@ -1,0 +1,63 @@
+esphome:
+  name: spi-test-simple
+  friendly_name: HC138 SPI Multiplexer Simple Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus - HSPI (ESP32 pins: GPIO14=CLK, GPIO12=MISO, GPIO13=MOSI)
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer - uses 3 address pins for 8 possible channels
+hc138:
+  id: mux
+  spi_id: spi_bus
+  a0: GPIO2   # Address pin A0 = P0 == IO2
+  a1: GPIO4   # Address pin A1 = P1 == IO4
+  a2: GPIO16  # Address pin A2 = P2 == IO16
+  channels:
+    - bus_id: test_bus
+      channel: 0  # A2=0, A1=0, A0=0
+
+# Use one SPI test device on HC138 channel 0
+spi_test:
+  - id: test_device
+    spi_id: test_bus  # HC138 channel 0
+
+# Simple test data sending every 2 seconds
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          ESP_LOGI("simple_test", "=== HC138 + SPI Simple Test ===");
+
+          auto device = id(test_device);
+          if (device != nullptr) {
+            ESP_LOGI("simple_test", "Device found: %p", static_cast<void *>(device));
+
+            // Write 0xFF to register 0xFF
+            device->write_register(0xFF, 0xFF);
+            ESP_LOGI("simple_test", "Wrote 0xFF to register 0xFF");
+
+            // Write 0x55 to register 0x55
+            device->write_register(0x55, 0x55);
+            ESP_LOGI("simple_test", "Wrote 0x55 to register 0x55");
+
+            // Try reading register 0xFF
+            uint8_t read_back = device->read_register(0xFF);
+            ESP_LOGI("simple_test", "Read register 0xFF: 0x%02X", read_back);
+
+            // Try reading register 0x2F (Product ID)
+            uint8_t product_id = device->read_register(0x2F);
+            ESP_LOGI("simple_test", "Product ID read: 0x%02X", product_id);
+          }

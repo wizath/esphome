@@ -1,0 +1,149 @@
+esphome:
+  name: spi-test
+  friendly_name: HC138 SPI Multiplexer Test with Configurable Parameters
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus - HSPI (ESP32 pins: GPIO14=CLK, GPIO12=MISO, GPIO13=MOSI)
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer - uses 3 address pins for 8 possible channels
+# Demonstrates configurable SPI parameters
+hc138:
+  id: mux
+  spi_id: spi_bus
+  cs_pin: GPIO15        # Shared CS pin for all devices
+  spi_mode: MODE1        # Custom SPI mode (default would be MODE0)
+  data_rate: 4MHz        # Custom data rate (default would be 1MHz)
+  bit_order: lsb_first   # Custom bit order (default would be msb_first)
+  a0: GPIO2   # Address pin A0 = P0 == IO2
+  a1: GPIO4   # Address pin A1 = P1 == IO4
+  a2: GPIO16  # Address pin A2 = P2 == IO16
+  channels:
+    - bus_id: ch0
+      channel: 0  # A2=0, A1=0, A0=0
+    - bus_id: ch1
+      channel: 1  # A2=0, A1=0, A0=1
+    - bus_id: ch2
+      channel: 2  # A2=0, A1=1, A0=0
+    - bus_id: ch3
+      channel: 3  # A2=0, A1=1, A0=1
+    - bus_id: ch4
+      channel: 4  # A2=1, A1=0, A0=0
+    - bus_id: ch5
+      channel: 5  # A2=1, A1=0, A0=1
+    - bus_id: ch6
+      channel: 6  # A2=1, A1=1, A0=0
+    - bus_id: ch7
+      channel: 7  # A2=1, A1=1, A0=1
+
+# Use multiple SPI test devices on different HC138 channels
+# Note: No CS pins - HC138 handles chip selection
+spi_test:
+  - id: test_device_ch0
+    spi_id: ch0  # HC138 channel 0 (A0=0, A1=0, A2=0)
+  - id: test_device_ch1
+    spi_id: ch1  # HC138 channel 1 (A0=1, A1=0, A2=0)
+  - id: test_device_ch2
+    spi_id: ch2  # HC138 channel 2 (A0=0, A1=1, A2=0)
+  - id: test_device_ch3
+    spi_id: ch3  # HC138 channel 3 (A0=1, A1=1, A2=0)
+  - id: test_device_ch4
+    spi_id: ch4  # HC138 channel 4 (A0=0, A1=0, A2=1)
+  - id: test_device_ch5
+    spi_id: ch5  # HC138 channel 5 (A0=1, A1=0, A2=1)
+  - id: test_device_ch6
+    spi_id: ch6  # HC138 channel 6 (A0=0, A1=1, A2=1)
+  - id: test_device_ch7
+    spi_id: ch7  # HC138 channel 7 (A0=1, A1=1, A2=1)
+
+# Test data sending every 500ms for scope visibility
+interval:
+  - interval: 500ms
+    then:
+      - lambda: |-
+          static uint8_t current_channel = 0;
+          static uint8_t test_data = 0;
+
+          ESP_LOGI("spi_test", "=== HC138 + SPI Test - Channel %d ===", current_channel);
+
+          // Get the current test device
+          esphome::spi_test::SPITestComponent *device = nullptr;
+          switch (current_channel) {
+            case 0:
+              device = id(test_device_ch0);
+              ESP_LOGI("spi_test", "Using HC138 channel 0: A0=0, A1=0, A2=0 (GPIO2=0, GPIO4=0, GPIO16=0)");
+              break;
+            case 1:
+              device = id(test_device_ch1);
+              ESP_LOGI("spi_test", "Using HC138 channel 1: A0=1, A1=0, A2=0 (GPIO2=1, GPIO4=0, GPIO16=0)");
+              break;
+            case 2:
+              device = id(test_device_ch2);
+              ESP_LOGI("spi_test", "Using HC138 channel 2: A0=0, A1=1, A2=0 (GPIO2=0, GPIO4=1, GPIO16=0)");
+              break;
+            case 3:
+              device = id(test_device_ch3);
+              ESP_LOGI("spi_test", "Using HC138 channel 3: A0=1, A1=1, A2=0 (GPIO2=1, GPIO4=1, GPIO16=0)");
+              break;
+            case 4:
+              device = id(test_device_ch4);
+              ESP_LOGI("spi_test", "Using HC138 channel 4: A0=0, A1=0, A2=1 (GPIO2=0, GPIO4=0, GPIO16=1)");
+              break;
+            case 5:
+              device = id(test_device_ch5);
+              ESP_LOGI("spi_test", "Using HC138 channel 5: A0=1, A1=0, A2=1 (GPIO2=1, GPIO4=0, GPIO16=1)");
+              break;
+            case 6:
+              device = id(test_device_ch6);
+              ESP_LOGI("spi_test", "Using HC138 channel 6: A0=0, A1=1, A2=1 (GPIO2=0, GPIO4=1, GPIO16=1)");
+              break;
+            case 7:
+              device = id(test_device_ch7);
+              ESP_LOGI("spi_test", "Using HC138 channel 7: A0=1, A1=1, A2=1 (GPIO2=1, GPIO4=1, GPIO16=1)");
+              break;
+          }
+
+          if (device != nullptr) {
+            // Send 0xFFFF pattern for clear scope visibility
+            ESP_LOGI("spi_test", "Channel %d: Sending 0xFFFF pattern", current_channel);
+
+            // Write 0xFF to register 0xFF
+            device->write_register(0xFF, 0xFF);
+            delay(10);
+
+            // Write 0xFF to register 0x00
+            device->write_register(0x00, 0xFF);
+            delay(10);
+
+            // Send multiple 0xFF patterns
+            for (int i = 0; i < 3; i++) {
+              device->write_register(0x55, 0xFF);
+              delay(5);
+            }
+
+            // Try reading some registers to see return data
+            uint8_t read_back = device->read_register(0xFF);
+            ESP_LOGI("spi_test", "Channel %d: Read back 0x%02X", current_channel, read_back);
+
+            delay(10);
+
+            uint8_t product_id = device->read_register(0x2F);
+            ESP_LOGI("spi_test", "Channel %d: Product ID read: 0x%02X", current_channel, product_id);
+          }
+
+          // Cycle through channels 0-7 with shared delegate
+          current_channel = (current_channel + 1) % 8;
+          test_data++;
+          ESP_LOGI("spi_test", "Next test cycle in 2 seconds...");
