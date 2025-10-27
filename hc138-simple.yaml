@@ -43,11 +43,22 @@ hc138:
     - bus_id: hc138_ch7
       channel: 7
 
-# Single SPI test device - HC138 will route CS to different physical devices
 spi_test:
-  - id: test_device
-    spi_id: hc138_ch0  # Use HC138 channel 0 as default, HC138 handles routing
+  - id: test_device_0
+    spi_id: hc138_ch0  # Connect through HC138 channel 0
     cs_pin: GPIO15
+  - id: test_device_1
+    spi_id: hc138_ch1  # Connect through HC138 channel 1
+    cs_pin: GPIO17
+  - id: test_device_2
+    spi_id: hc138_ch2  # Connect through HC138 channel 2
+    cs_pin: GPIO18
+  - id: test_device_3
+    spi_id: hc138_ch3  # Connect through HC138 channel 3
+    cs_pin: GPIO19
+  - id: test_device_4
+    spi_id: hc138_ch4  # Connect through HC138 channel 4
+    cs_pin: GPIO21
 
 # Test HC138 channel switching
 interval:
@@ -64,12 +75,38 @@ interval:
           // Test SPI transfer with proper CS control
           uint8_t test_data[] = {0x55, 0xAA, channel};
 
-          // Use single device - HC138 address pins will route CS to correct physical device
-          id(test_device)->enable();
-          id(test_device)->write_array(test_data, 3);
-          id(test_device)->disable();
-
-          ESP_LOGI("hc138_test", "Sent test data on channel %d (HC138 routes CS to physical device)", channel);
+          switch(channel) {
+            case 0:
+              id(test_device_0)->enable();
+              id(test_device_0)->write_array(test_data, 3);
+              id(test_device_0)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 0 via hc138_ch0");
+              break;
+            case 1:
+              id(test_device_1)->enable();
+              id(test_device_1)->write_array(test_data, 3);
+              id(test_device_1)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 1 via hc138_ch1");
+              break;
+            case 2:
+              id(test_device_2)->enable();
+              id(test_device_2)->write_array(test_data, 3);
+              id(test_device_2)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 2 via hc138_ch2");
+              break;
+            case 3:
+              id(test_device_3)->enable();
+              id(test_device_3)->write_array(test_data, 3);
+              id(test_device_3)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 3 via hc138_ch3");
+              break;
+            case 4:
+              id(test_device_4)->enable();
+              id(test_device_4)->write_array(test_data, 3);
+              id(test_device_4)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 4 via hc138_ch4");
+              break;
+          }
 
           // Cycle through channels 0-4 to test HC138 address pin switching
           channel = (channel + 1) % 5;
