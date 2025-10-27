@@ -1,0 +1,112 @@
+esphome:
+  name: hc138-simple
+  friendly_name: Simple HC138 Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer like TCA9548A
+hc138:
+  id: mux
+  spi_id: spi_bus
+  a0: GPIO2
+  a1: GPIO4
+  a2: GPIO16
+  channels:
+    - bus_id: hc138_ch0
+      channel: 0
+    - bus_id: hc138_ch1
+      channel: 1
+    - bus_id: hc138_ch2
+      channel: 2
+    - bus_id: hc138_ch3
+      channel: 3
+    - bus_id: hc138_ch4
+      channel: 4
+    - bus_id: hc138_ch5
+      channel: 5
+    - bus_id: hc138_ch6
+      channel: 6
+    - bus_id: hc138_ch7
+      channel: 7
+
+spi_test:
+  - id: test_device_0
+    spi_id: hc138_ch0  # Connect through HC138 channel 0
+    cs_pin: GPIO15
+  - id: test_device_1
+    spi_id: hc138_ch1  # Connect through HC138 channel 1
+    cs_pin: GPIO15
+  - id: test_device_2
+    spi_id: hc138_ch2  # Connect through HC138 channel 2
+    cs_pin: GPIO15
+  - id: test_device_3
+    spi_id: hc138_ch3  # Connect through HC138 channel 3
+    cs_pin: GPIO15
+  - id: test_device_4
+    spi_id: hc138_ch4  # Connect through HC138 channel 4
+    cs_pin: GPIO15
+
+# Test HC138 channel switching
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          static uint8_t channel = 0;
+
+          ESP_LOGI("hc138_test", "=== Testing HC138 channel %d ===", channel);
+
+          // Note: Channel switching happens automatically when using different bus_ids
+          // For this test, we're using hc138_ch0 which corresponds to channel 0
+
+          // Test SPI transfer with proper CS control
+          uint8_t test_data[] = {0x55, 0xAA, channel};
+
+          switch(channel) {
+            case 0:
+              id(test_device_0)->enable();
+              id(test_device_0)->write_array(test_data, 3);
+              id(test_device_0)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 0 via hc138_ch0");
+              break;
+            case 1:
+              id(test_device_1)->enable();
+              id(test_device_1)->write_array(test_data, 3);
+              id(test_device_1)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 1 via hc138_ch1");
+              break;
+            case 2:
+              id(test_device_2)->enable();
+              id(test_device_2)->write_array(test_data, 3);
+              id(test_device_2)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 2 via hc138_ch2");
+              break;
+            case 3:
+              id(test_device_3)->enable();
+              id(test_device_3)->write_array(test_data, 3);
+              id(test_device_3)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 3 via hc138_ch3");
+              break;
+            case 4:
+              id(test_device_4)->enable();
+              id(test_device_4)->write_array(test_data, 3);
+              id(test_device_4)->disable();
+              ESP_LOGI("hc138_test", "Sent test data on channel 4 via hc138_ch4");
+              break;
+          }
+
+          // Cycle through channels 0-4 to test HC138 address pin switching
+          channel = (channel + 1) % 5;

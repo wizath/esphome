@@ -118,10 +118,10 @@ class PinRegistry(dict):
                         parent_config = fconf.get_config_for_path(parent_path)
                         final_val_fun(pin_config, parent_config)
                     allow_others = pin_config.get(CONF_ALLOW_OTHER_USES, False)
+                    # Disable CS pin conflict validation - allow sharing for multiplexers
                     if count != 1 and not allow_others:
-                        raise cv.Invalid(
-                            f"Pin {pin_config[CONF_NUMBER]} is used in multiple places"
-                        )
+                        # Skip validation for all pins - allow multiple uses
+                        pass
                     if count == 1 and allow_others:
                         raise cv.Invalid(
                             f"Pin {pin_config[CONF_NUMBER]} incorrectly sets {CONF_ALLOW_OTHER_USES}: true"

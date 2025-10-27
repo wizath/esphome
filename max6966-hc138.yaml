@@ -1,0 +1,140 @@
+esphome:
+  name: max6966-hc138
+  friendly_name: MAX6966 with HC138 SPI Multiplexer
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 SPI multiplexer - All address pins set to 0 (channel 0)
+# Note: CS pin is controlled internally, not declared to avoid conflicts
+hc138:
+  id: mux
+  spi_id: spi_bus
+  a0: GPIO2   # Address pin A0 = 0
+  a1: GPIO4   # Address pin A1 = 0
+  a2: GPIO16  # Address pin A2 = 0
+  channels:
+    - bus_id: max6966_bus
+      channel: 0  # All address pins 0 = channel 0
+
+# MAX6966 LED driver on HC138 channel 0
+max6966:
+  - id: led_driver
+    spi_id: max6966_bus   # Use HC138 channel 0
+    cs_pin: GPIO15        # CS pin passed through HC138
+    num_ports: 10
+
+# Configure MAX6966 outputs
+output:
+  - platform: max6966
+    id: port0_out
+    max6966_id: led_driver
+    channel: 0
+    full_current: true
+
+  - platform: max6966
+    id: port1_out
+    max6966_id: led_driver
+    channel: 1
+    full_current: true
+
+  - platform: max6966
+    id: port2_out
+    max6966_id: led_driver
+    channel: 2
+    full_current: true
+
+  - platform: max6966
+    id: port3_out
+    max6966_id: led_driver
+    channel: 3
+    full_current: true
+
+  - platform: max6966
+    id: port4_out
+    max6966_id: led_driver
+    channel: 4
+    full_current: true
+
+# Light components for PWM control
+light:
+  - platform: monochromatic
+    name: "Port 0 LED"
+    output: port0_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 1 LED"
+    output: port1_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 2 LED"
+    output: port2_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 3 LED"
+    output: port3_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+  - platform: monochromatic
+    name: "Port 4 LED"
+    output: port4_out
+    restore_mode: RESTORE_DEFAULT_OFF
+    gamma_correct: 0
+
+# Switch components for on/off control
+switch:
+  - platform: output
+    name: "Port 0 Switch"
+    output: port0_out
+
+  - platform: output
+    name: "Port 1 Switch"
+    output: port1_out
+
+  - platform: output
+    name: "Port 2 Switch"
+    output: port2_out
+
+  - platform: output
+    name: "Port 3 Switch"
+    output: port3_out
+
+  - platform: output
+    name: "Port 4 Switch"
+    output: port4_out
+
+# Simple test: try to initialize MAX6966 and log status
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          ESP_LOGI("test", "=== 5 Second Test Tick ===");
+          auto driver = id(led_driver);
+          if (driver == nullptr) {
+            ESP_LOGE("test", "MAX6966 driver is null! Component not initialized.");
+          } else {
+            ESP_LOGI("test", "MAX6966 driver found: %p", static_cast<void *>(driver));
+            // Try to set port 0 to 50% (0x80 for open drain)
+            driver->set_port(0, 0x80);
+            ESP_LOGI("test", "Set port 0 to 50%% PWM (0x80)");
+          }

@@ -1,0 +1,74 @@
+esphome:
+  name: hc138-test-only
+  friendly_name: HC138 GPIO Test Only
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus required by HC138 (even if not used)
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# HC138 test without any SPI devices - just GPIO control
+hc138:
+  id: mux
+  spi_id: spi_bus
+  cs_pin: GPIO15
+  a0: GPIO2   # Address pin A0 = P0 == IO2
+  a1: GPIO4   # Address pin A1 = P1 == IO4
+  a2: GPIO16  # Address pin A2 = P2 == IO16
+  channels:
+    - bus_id: test_bus
+      channel: 0  # A2=0, A1=0, A0=0
+
+# Test HC138 address line switching every 3 seconds
+interval:
+  - interval: 3s
+    then:
+      - lambda: |-
+          static uint8_t current_channel = 0;
+          static bool test_running = true;
+
+          if (test_running) {
+            ESP_LOGI("hc138_test", "=== HC138 GPIO Test - Testing Channel %d ===", current_channel);
+
+            // Get HC138 component
+            auto hc138_mux = id(mux);
+            if (hc138_mux != nullptr) {
+              ESP_LOGI("hc138_test", "HC138 component found: %p", static_cast<void *>(hc138_mux));
+
+              // Select channel and log GPIO states
+              hc138_mux->select_channel(current_channel);
+              ESP_LOGI("hc138_test", "Channel %d selected: A0=%d, A1=%d, A2=%d",
+                       current_channel,
+                       current_channel & 0x01,
+                       (current_channel >> 1) & 0x01,
+                       (current_channel >> 2) & 0x01);
+
+              // Keep CS active for 1 second, then deactivate
+              delay(1000);
+
+              // Deactivate CS by setting it high (inactive)
+              // Note: HC138 automatically handles CS - this is just for testing
+              ESP_LOGI("hc138_test", "CS should now be inactive for channel %d", current_channel);
+
+              // Cycle to next channel (0-7)
+              current_channel = (current_channel + 1) % 8;
+
+              if (current_channel == 0) {
+                ESP_LOGI("hc138_test", "Completed full cycle of all 8 channels");
+                test_running = false; // Stop after one full cycle
+              }
+            } else {
+              ESP_LOGE("hc138_test", "HC138 component is null!");
+            }
+          }
