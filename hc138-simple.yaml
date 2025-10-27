@@ -49,16 +49,16 @@ spi_test:
     cs_pin: GPIO15
   - id: test_device_1
     spi_id: hc138_ch1  # Connect through HC138 channel 1
-    cs_pin: GPIO17
+    cs_pin: GPIO15
   - id: test_device_2
     spi_id: hc138_ch2  # Connect through HC138 channel 2
-    cs_pin: GPIO18
+    cs_pin: GPIO15
   - id: test_device_3
     spi_id: hc138_ch3  # Connect through HC138 channel 3
-    cs_pin: GPIO19
+    cs_pin: GPIO15
   - id: test_device_4
     spi_id: hc138_ch4  # Connect through HC138 channel 4
-    cs_pin: GPIO21
+    cs_pin: GPIO15
 
 # Test HC138 channel switching
 interval:
