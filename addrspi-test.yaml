@@ -1,0 +1,86 @@
+esphome:
+  name: addrspi-test
+  friendly_name: ADDRSPI SPI Multiplexer Test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+# Shared SPI bus
+spi:
+  id: spi_bus
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+
+# ADDRSPI multiplexer with 3 address pins (8 channels)
+addrspi:
+  id: mux
+  spi_id: spi_bus
+  address_pins: [GPIO2, GPIO4, GPIO16]
+  channels:
+    - bus_id: addrspi_ch0
+      channel: 0
+    - bus_id: addrspi_ch1
+      channel: 1
+    - bus_id: addrspi_ch2
+      channel: 2
+    - bus_id: addrspi_ch3
+      channel: 3
+    - bus_id: addrspi_ch4
+      channel: 4
+
+# SPI test devices on different channels
+spi_test:
+  - id: test_device_0
+    spi_id: addrspi_ch0
+    cs_pin: GPIO15
+
+  - id: test_device_1
+    spi_id: addrspi_ch1
+    cs_pin: GPIO15
+
+  - id: test_device_2
+    spi_id: addrspi_ch2
+    cs_pin: GPIO15
+
+  - id: test_device_3
+    spi_id: addrspi_ch3
+    cs_pin: GPIO15
+
+  - id: test_device_4
+    spi_id: addrspi_ch4
+    cs_pin: GPIO15
+
+# Test ADDRSPI channel switching
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          static uint8_t channel = 0;
+
+          ESP_LOGI("addrspi_test", "=== Testing channel %d ===", channel);
+
+          // Access each test device sequentially
+          auto *device = id(test_device_0);
+          switch(channel) {
+            case 0: device = id(test_device_0); break;
+            case 1: device = id(test_device_1); break;
+            case 2: device = id(test_device_2); break;
+            case 3: device = id(test_device_3); break;
+            case 4: device = id(test_device_4); break;
+          }
+
+          // Perform SPI write operation (will trigger channel selection)
+          if (device) {
+            device->write_byte(0xAA);
+            ESP_LOGI("addrspi_test", "Wrote 0xAA to channel %d", channel);
+          }
+
+          // Cycle to next channel
+          channel = (channel + 1) % 5;
