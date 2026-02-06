@@ -1,0 +1,16 @@
+esphome:
+  name: esp32p4-hello
+
+esp32:
+  board: esp32-p4-evboard
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+interval:
+  - interval: 1s
+    then:
+      - logger.log: "hello from ESP32-P4"
