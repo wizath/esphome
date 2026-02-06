@@ -10,6 +10,16 @@ logger:
   level: DEBUG
   hardware_uart: USB_SERIAL_JTAG
 
+ethernet:
+  type: IP101
+  mdc_pin: GPIO31
+  mdio_pin: GPIO52
+  phy_addr: 1
+  power_pin: GPIO51
+  clk:
+    mode: CLK_EXT_IN
+    pin: GPIO50
+
 interval:
   - interval: 1s
     then:
