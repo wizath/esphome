@@ -19,35 +19,38 @@ CONF_SIGNAL_BUFFER = "signal_buffer"
 CONF_REFERENCE_BUFFER = "reference_buffer"
 CONF_SELF_CALIBRATE = "self_calibrate"
 
-max11210_ns = cg.esphome_ns.namespace("max11210")
-MAX11210Sensor = max11210_ns.class_(
-    "MAX11210Sensor", sensor.Sensor, cg.PollingComponent, spi.SPIDevice
+max112xx_ns = cg.esphome_ns.namespace("max112xx")
+MAX112xxSensor = max112xx_ns.class_(
+    "MAX112xxSensor", sensor.Sensor, cg.PollingComponent, spi.SPIDevice
 )
 
-Max11210Gain = max11210_ns.enum("Max11210Gain")
+Max112xxGain = max112xx_ns.enum("Max112xxGain")
 GAIN_OPTIONS = {
-    1: Max11210Gain.MAX11210_GAIN_1,
-    2: Max11210Gain.MAX11210_GAIN_2,
-    4: Max11210Gain.MAX11210_GAIN_4,
-    8: Max11210Gain.MAX11210_GAIN_8,
-    16: Max11210Gain.MAX11210_GAIN_16,
+    1: Max112xxGain.MAX112XX_GAIN_1,
+    2: Max112xxGain.MAX112XX_GAIN_2,
+    4: Max112xxGain.MAX112XX_GAIN_4,
+    8: Max112xxGain.MAX112XX_GAIN_8,
+    16: Max112xxGain.MAX112XX_GAIN_16,
+    32: Max112xxGain.MAX112XX_GAIN_32,
+    64: Max112xxGain.MAX112XX_GAIN_64,
+    128: Max112xxGain.MAX112XX_GAIN_128,
 }
 
-Max11210Rate = max11210_ns.enum("Max11210Rate")
+Max112xxRate = max112xx_ns.enum("Max112xxRate")
 RATE_OPTIONS = {
-    "1SPS": Max11210Rate.MAX11210_RATE_1SPS,
-    "2.5SPS": Max11210Rate.MAX11210_RATE_2_5SPS,
-    "5SPS": Max11210Rate.MAX11210_RATE_5SPS,
-    "10SPS": Max11210Rate.MAX11210_RATE_10SPS,
-    "15SPS": Max11210Rate.MAX11210_RATE_15SPS,
-    "30SPS": Max11210Rate.MAX11210_RATE_30SPS,
-    "60SPS": Max11210Rate.MAX11210_RATE_60SPS,
-    "120SPS": Max11210Rate.MAX11210_RATE_120SPS,
+    "1SPS": Max112xxRate.MAX112XX_RATE_1SPS,
+    "2.5SPS": Max112xxRate.MAX112XX_RATE_2_5SPS,
+    "5SPS": Max112xxRate.MAX112XX_RATE_5SPS,
+    "10SPS": Max112xxRate.MAX112XX_RATE_10SPS,
+    "15SPS": Max112xxRate.MAX112XX_RATE_15SPS,
+    "30SPS": Max112xxRate.MAX112XX_RATE_30SPS,
+    "60SPS": Max112xxRate.MAX112XX_RATE_60SPS,
+    "120SPS": Max112xxRate.MAX112XX_RATE_120SPS,
 }
 
 CONFIG_SCHEMA = (
     sensor.sensor_schema(
-        MAX11210Sensor,
+        MAX112xxSensor,
         unit_of_measurement=UNIT_VOLT,
         accuracy_decimals=6,
         device_class=DEVICE_CLASS_VOLTAGE,

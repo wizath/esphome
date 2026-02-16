@@ -1,6 +1,6 @@
 sensor:
-  - platform: max11210
-    name: MAX11210 ADC
+  - platform: max112xx
+    name: MAX112xx ADC
     cs_pin: ${cs_pin}
     update_interval: 60s
     gain: 1

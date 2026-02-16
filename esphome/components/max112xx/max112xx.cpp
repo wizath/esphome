@@ -1,11 +1,11 @@
-#include "max11210.h"
+#include "max112xx.h"
 
 #include "esphome/core/log.h"
 
 namespace esphome {
-namespace max11210 {
+namespace max112xx {
 
-static const char *const TAG = "max11210";
+static const char *const TAG = "max112xx";
 
 // Command byte constants
 static const uint8_t CMD_START = 0x80;
@@ -42,13 +42,13 @@ static const uint8_t CTRL3_DGAIN_SHIFT = 5;
 // Calibration command (MODE=0): CAL0 bit
 static const uint8_t CMD_CAL_SELF = 0x10;
 
-void MAX11210Sensor::send_command_(uint8_t cmd) {
+void MAX112xxSensor::send_command_(uint8_t cmd) {
   this->enable();
   this->transfer_byte(CMD_START | cmd);
   this->disable();
 }
 
-uint8_t MAX11210Sensor::read_register8_(uint8_t reg) {
+uint8_t MAX112xxSensor::read_register8_(uint8_t reg) {
   uint8_t cmd = CMD_START | CMD_MODE_REG | ((reg & 0x0F) << 1) | CMD_READ;
   this->enable();
   this->transfer_byte(cmd);
@@ -57,7 +57,7 @@ uint8_t MAX11210Sensor::read_register8_(uint8_t reg) {
   return value;
 }
 
-void MAX11210Sensor::write_register8_(uint8_t reg, uint8_t value) {
+void MAX112xxSensor::write_register8_(uint8_t reg, uint8_t value) {
   uint8_t cmd = CMD_START | CMD_MODE_REG | ((reg & 0x0F) << 1);
   this->enable();
   this->transfer_byte(cmd);
@@ -65,7 +65,7 @@ void MAX11210Sensor::write_register8_(uint8_t reg, uint8_t value) {
   this->disable();
 }
 
-int32_t MAX11210Sensor::read_register24_(uint8_t reg) {
+int32_t MAX112xxSensor::read_register24_(uint8_t reg) {
   uint8_t cmd = CMD_START | CMD_MODE_REG | ((reg & 0x0F) << 1) | CMD_READ;
   this->enable();
   this->transfer_byte(cmd);
@@ -82,8 +82,8 @@ int32_t MAX11210Sensor::read_register24_(uint8_t reg) {
   return value;
 }
 
-void MAX11210Sensor::setup() {
-  ESP_LOGCONFIG(TAG, "Setting up MAX11210...");
+void MAX112xxSensor::setup() {
+  ESP_LOGCONFIG(TAG, "Setting up MAX112xx...");
   this->spi_setup();
 
   // Build CTRL1: single-cycle mode, 2's complement, user config for buffers/polarity/line freq
@@ -121,15 +121,15 @@ void MAX11210Sensor::setup() {
   // Verify communication by reading STAT1
   uint8_t stat = this->read_register8_(REG_STAT1);
   if (stat == 0xFF) {
-    ESP_LOGE(TAG, "Failed to communicate with MAX11210 (STAT1=0xFF). Check wiring!");
+    ESP_LOGE(TAG, "Failed to communicate with MAX112xx (STAT1=0xFF). Check wiring!");
     this->mark_failed();
     return;
   }
   ESP_LOGD(TAG, "STAT1 after setup: 0x%02X", stat);
 }
 
-void MAX11210Sensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "MAX11210:");
+void MAX112xxSensor::dump_config() {
+  ESP_LOGCONFIG(TAG, "MAX112xx:");
   LOG_PIN("  CS Pin: ", this->cs_);
   ESP_LOGCONFIG(TAG, "  Gain: %u", 1 << this->gain_);
   ESP_LOGCONFIG(TAG, "  Rate: %u", this->rate_);
@@ -143,39 +143,38 @@ void MAX11210Sensor::dump_config() {
   LOG_SENSOR("  ", "Sensor", this);
 }
 
-float MAX11210Sensor::get_setup_priority() const { return setup_priority::DATA; }
+float MAX112xxSensor::get_setup_priority() const { return setup_priority::DATA; }
 
-void MAX11210Sensor::update() {
+void MAX112xxSensor::update() {
   // Start single-cycle conversion with configured rate
   this->send_command_(this->rate_);
 
   // Schedule read after conversion completes
-  // Worst case at 1 SPS is ~1200ms; use a generous timeout per rate
-  // For simplicity, use 1500ms which covers all rates
+  // Worst case at 1 SPS with LINEF=1 is ~1200ms
   uint32_t timeout_ms;
   switch (this->rate_) {
-    case MAX11210_RATE_1SPS:
+    case MAX112XX_RATE_1SPS:
       timeout_ms = 1200;
       break;
-    case MAX11210_RATE_2_5SPS:
+    case MAX112XX_RATE_2_5SPS:
       timeout_ms = 500;
       break;
-    case MAX11210_RATE_5SPS:
+    case MAX112XX_RATE_5SPS:
       timeout_ms = 250;
       break;
-    case MAX11210_RATE_10SPS:
+    case MAX112XX_RATE_10SPS:
       timeout_ms = 150;
       break;
-    case MAX11210_RATE_15SPS:
+    case MAX112XX_RATE_15SPS:
       timeout_ms = 100;
       break;
-    case MAX11210_RATE_30SPS:
+    case MAX112XX_RATE_30SPS:
       timeout_ms = 50;
       break;
-    case MAX11210_RATE_60SPS:
+    case MAX112XX_RATE_60SPS:
       timeout_ms = 30;
       break;
-    case MAX11210_RATE_120SPS:
+    case MAX112XX_RATE_120SPS:
       timeout_ms = 20;
       break;
     default:
@@ -186,7 +185,7 @@ void MAX11210Sensor::update() {
   this->set_timeout("read", timeout_ms, [this]() { this->read_data_(); });
 }
 
-void MAX11210Sensor::read_data_() {
+void MAX112xxSensor::read_data_() {
   // Check RDY bit
   uint8_t stat = this->read_register8_(REG_STAT1);
   if (!(stat & STAT1_RDY)) {
@@ -206,7 +205,7 @@ void MAX11210Sensor::read_data_() {
   int32_t raw = this->read_register24_(REG_DATA);
 
   // Convert to voltage
-  // 24-bit two's complement: full scale = +/- VREF (bipolar) or 0..VREF (unipolar)
+  // DATA register is always 24-bit, MSB-aligned for all variants (16/18/20/24-bit)
   // With gain: effective input range = VREF / gain
   float gain_value = static_cast<float>(1 << this->gain_);
   float voltage;
@@ -224,5 +223,5 @@ void MAX11210Sensor::read_data_() {
   this->status_clear_warning();
 }
 
-}  // namespace max11210
+}  // namespace max112xx
 }  // namespace esphome
