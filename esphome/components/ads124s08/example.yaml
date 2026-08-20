@@ -1,0 +1,37 @@
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+ads124s08:
+  - id: adc_temperatures
+    model: ADS124S08
+    cs_pin: GPIO5
+    start_sync_pin: GPIO4
+    reference: REF0
+    pga_gain: 1
+    adc_data_rate: 20SPS
+    conversion_time: 120ms
+    channels:
+      - type: pt100
+        ain_p: 0
+        ain_n: 1
+        idac_pin: 0
+        idac_current: 500uA
+        reference_resistance: 4000ohm
+        temperature:
+          name: "RTD Channel 0 Temperature"
+        resistance:
+          name: "RTD Channel 0 Resistance"
+        raw:
+          name: "RTD Channel 0 Raw"
+        status:
+          name: "RTD Channel 0 Status"
+      - type: ntc
+        ain_p: 2
+        ain_n: AINCOM
+        reference_resistance: 10000ohm
+        nominal_resistance: 10000ohm
+        beta: 3950
+        temperature:
+          name: "NTC Channel 1 Temperature"
