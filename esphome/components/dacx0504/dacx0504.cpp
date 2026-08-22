@@ -18,6 +18,8 @@ static const uint8_t REG_DAC0 = 0x08;
 
 static const uint16_t CONFIG_REF_POWER_DOWN = 0x0100;
 static const uint16_t TRIGGER_SOFT_RESET = 0x000A;
+static const uint16_t SYNC_ASYNC_ALL = 0xFF00;
+static const uint16_t SYNC_LDAC_ALL = 0xFF0F;
 static const uint16_t GAIN_REFDIV_2 = 0x0100;
 
 void DACX0504::setup() {
@@ -30,7 +32,8 @@ void DACX0504::setup() {
 
   this->write_register_(REG_TRIGGER, TRIGGER_SOFT_RESET);
   delay(1);
-  this->write_register_(REG_SYNC, 0xFF00);  // async DAC updates; broadcast enabled, matching reset defaults.
+  // With LDAC wired, use synchronous mode so the pin controls active DAC updates.
+  this->write_register_(REG_SYNC, this->ldac_pin_ != nullptr ? SYNC_LDAC_ALL : SYNC_ASYNC_ALL);
   this->write_register_(REG_CONFIG, this->reference_ == DACX0504_EXTERNAL_REFERENCE ? CONFIG_REF_POWER_DOWN : 0x0000);
   this->write_register_(REG_GAIN, this->gain_register_());
 }
@@ -53,7 +56,20 @@ void DACX0504::write_register_(uint8_t reg, uint16_t value) {
   this->disable();
 }
 
+void DACX0504::pulse_ldac_() {
+  if (this->ldac_pin_ == nullptr) {
+    return;
+  }
+  this->ldac_pin_->digital_write(false);
+  delayMicroseconds(1);
+  this->ldac_pin_->digital_write(true);
+  delayMicroseconds(1);
+}
+
 uint16_t DACX0504::scale_state_(float state) const {
+  if (!std::isfinite(state)) {
+    state = 0.0f;
+  }
   state = std::clamp(state, 0.0f, 1.0f);
   const uint8_t resolution = static_cast<uint8_t>(this->model_);
   const uint32_t max_code = (1UL << resolution) - 1UL;
@@ -74,6 +90,7 @@ void DACX0504::set_channel_value(uint8_t channel, float state) {
     return;
   }
   this->write_register_(REG_DAC0 + channel, this->scale_state_(state));
+  this->pulse_ldac_();
 }
 
 void DACX0504Channel::write_state(float state) {

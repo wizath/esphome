@@ -37,6 +37,7 @@ class DACX0504 : public Component,
 
  protected:
   void write_register_(uint8_t reg, uint16_t value);
+  void pulse_ldac_();
   uint16_t scale_state_(float state) const;
   uint16_t gain_register_() const;
 
