@@ -1,0 +1,21 @@
+esphome:
+  name: dacx0504-test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+dacx0504:
+  id: dac_outputs
+  model: DAC80504
+  cs_pin: ${cs_pin}
+  reference: INTERNAL
+  reference_divider: 1
+  gain: 2
+
+output:
+  - platform: dacx0504
+    id: dac_output_0
+    dacx0504_id: dac_outputs
+    channel: 0

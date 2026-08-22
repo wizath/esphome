@@ -1,0 +1,15 @@
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+ads8166:
+  id: fast_adc
+  cs_pin: GPIO5
+  reference_voltage: 4.096V
+
+sensor:
+  - platform: ads8166
+    ads8166_id: fast_adc
+    name: "ADS8166 Channel 0"
+    channel: 0

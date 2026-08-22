@@ -1,0 +1,18 @@
+esphome:
+  name: mcp3208-test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+mcp3208:
+  id: mcp3208_adc
+  cs_pin: ${cs_pin}
+  reference_voltage: 3.3V
+
+sensor:
+  - platform: mcp3208
+    mcp3208_id: mcp3208_adc
+    name: MCP3208 Channel 0
+    channel: 0

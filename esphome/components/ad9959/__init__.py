@@ -15,7 +15,18 @@ CONF_PLL_MULTIPLIER = "pll_multiplier"
 ad9959_ns = cg.esphome_ns.namespace("ad9959")
 AD9959 = ad9959_ns.class_("AD9959", cg.Component, spi.SPIDevice)
 
-CONFIG_SCHEMA = (
+
+def validate_core_clock(config):
+    core_clock = config[CONF_REF_CLOCK] * config[CONF_PLL_MULTIPLIER]
+    if not 100000000 <= core_clock <= 500000000:
+        raise cv.Invalid(
+            "AD9959 PLL output must be between 100 MHz and 500 MHz "
+            f"(got {core_clock} Hz from ref_clock * pll_multiplier)"
+        )
+    return config
+
+
+CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(AD9959),
@@ -26,7 +37,8 @@ CONFIG_SCHEMA = (
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
-    .extend(spi.spi_device_schema(cs_pin_required=True, default_mode="MODE3"))
+    .extend(spi.spi_device_schema(cs_pin_required=True, default_mode="MODE3")),
+    validate_core_clock,
 )
 
 FINAL_VALIDATE_SCHEMA = spi.final_validate_device_schema(

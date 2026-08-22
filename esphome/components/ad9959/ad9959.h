@@ -86,6 +86,7 @@ class AD9959 : public Component,
   void set_phase(uint8_t channel, uint16_t phase);
   void set_amplitude(uint8_t channel, uint16_t amplitude);
 
+  // Most AD9959 writes are buffered until I/O_UPDATE transfers them into active registers.
   void update_registers();
   uint32_t get_core_clock() const { return this->core_clock_; }
 
@@ -117,6 +118,13 @@ class AD9959Channel : public output::FloatOutput, public Component {
   void set_channel(uint8_t channel) { this->channel_ = channel; }
 
   void write_state(float state) override {
+    if (state != state) {
+      state = 0.0f;
+    } else if (state < 0.0f) {
+      state = 0.0f;
+    } else if (state > 1.0f) {
+      state = 1.0f;
+    }
     uint32_t max_freq = this->parent_->get_core_clock() / 2;
     uint32_t freq = static_cast<uint32_t>(state * max_freq);
     this->parent_->set_frequency(this->channel_, freq);

@@ -1,0 +1,18 @@
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+dacx0504:
+  id: analog_outputs
+  model: DAC80504
+  cs_pin: GPIO5
+  reference: INTERNAL
+  reference_divider: 1
+  gain: 2
+
+output:
+  - platform: dacx0504
+    id: dac_out0
+    dacx0504_id: analog_outputs
+    channel: 0

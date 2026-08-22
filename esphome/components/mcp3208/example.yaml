@@ -1,0 +1,20 @@
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+mcp3208:
+  id: adc_inputs
+  cs_pin: GPIO5
+  reference_voltage: 3.3V
+
+sensor:
+  - platform: mcp3208
+    mcp3208_id: adc_inputs
+    name: "MCP3208 Channel 0"
+    channel: 0
+  - platform: mcp3208
+    mcp3208_id: adc_inputs
+    name: "MCP3208 Differential Pair 0"
+    channel: 0
+    differential: true
