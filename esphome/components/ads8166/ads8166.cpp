@@ -43,7 +43,8 @@ void ADS8166::reset_() {
   this->reset_pin_->digital_write(false);
   delay(1);
   this->reset_pin_->digital_write(true);
-  delay(1);
+  // RST rising to READY rising can take up to 4 ms; wait before register writes.
+  delay(4);
 }
 
 uint32_t ADS8166::transfer_frame_(uint32_t frame) {
