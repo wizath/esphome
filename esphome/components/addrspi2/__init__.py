@@ -3,20 +3,22 @@ from esphome.components import spi
 import esphome.config_validation as cv
 from esphome.const import CONF_ADDRESS, CONF_DEVICES, CONF_ID
 
+CONF_BUS_ID = "bus_id"
+
 DEPENDENCIES = ["spi"]
 CODEOWNERS = ["@wizath"]
 MULTI_CONF = True
 
 addrspi2_ns = cg.esphome_ns.namespace("addrspi2")
 ADDRSPI2Component = addrspi2_ns.class_("ADDRSPI2Component", cg.Component, spi.SPIDevice)
-ADDRSPI2Device = addrspi2_ns.class_("ADDRSPI2Device")
+ADDRSPI2Channel = addrspi2_ns.class_("ADDRSPI2Channel", spi.SPIComponent)
 
 DEVICE_SCHEMA = cv.Schema(
     {
-        cv.Required(CONF_ID): cv.declare_id(ADDRSPI2Device),
+        cv.Required(CONF_BUS_ID): cv.declare_id(ADDRSPI2Channel),
         cv.Required(CONF_ADDRESS): cv.hex_uint8_t,
     }
-)
+).extend(cv.COMPONENT_SCHEMA)
 
 CONFIG_SCHEMA = (
     cv.Schema(
@@ -40,7 +42,8 @@ async def to_code(config):
     await spi.register_spi_device(var, config)
 
     for device_config in config[CONF_DEVICES]:
-        device = cg.new_Pvariable(device_config[CONF_ID])
-        cg.add(device.set_parent(var))
-        cg.add(device.set_address(device_config[CONF_ADDRESS]))
-        cg.add(var.register_device(device))
+        channel = cg.new_Pvariable(device_config[CONF_BUS_ID])
+        await cg.register_component(channel, device_config)
+        cg.add(channel.set_parent(var))
+        cg.add(channel.set_address(device_config[CONF_ADDRESS]))
+        cg.add(var.register_channel(channel))

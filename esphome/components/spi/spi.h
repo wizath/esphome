@@ -336,7 +336,7 @@ class SPIComponent : public Component {
  public:
   virtual SPIDelegate *register_device(SPIClient *device, SPIMode mode, SPIBitOrder bit_order, uint32_t data_rate,
                                        GPIOPin *cs_pin, bool release_device, bool write_only);
-  void unregister_device(SPIClient *device);
+  virtual void unregister_device(SPIClient *device);
 
   void set_clk(GPIOPin *clk) { this->clk_pin_ = clk; }
 

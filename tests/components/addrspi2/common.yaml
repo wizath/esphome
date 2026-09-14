@@ -8,12 +8,23 @@ esp32:
 
 addrspi2:
   id: moduliq_head
-  cs_pin: ${cs_pin}
+  spi_id: spi_bus
+  cs_pin:
+    number: ${cs_pin}
+    allow_other_uses: true
   devices:
-    - id: head_dac
+    - bus_id: head_dac
       address: 0x00
-    - id: head_adc
+    - bus_id: head_adc
       address: 0x01
+
+spi_device:
+  id: transparent_spi_device
+  spi_id: head_dac
+  cs_pin:
+    number: ${cs_pin}
+    allow_other_uses: true
+  spi_mode: MODE0
 
 interval:
   - interval: 60s

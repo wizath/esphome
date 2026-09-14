@@ -1,0 +1,42 @@
+esphome:
+  name: addrspi2-la-test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+
+spi:
+  id: spi_bus
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+addrspi2:
+  id: mux_bus
+  spi_id: spi_bus
+  cs_pin: GPIO5
+  devices:
+    - bus_id: addr0
+      address: 0x00
+    - bus_id: addr1
+      address: 0x01
+
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          static bool toggle = false;
+          toggle = !toggle;
+
+          if (toggle) {
+            // LA expected MOSI bytes while CS is low: 00 A5 5A 00 FF
+            uint8_t payload[] = {0xA5, 0x5A, 0x00, 0xFF};
+            id(addr0).write_transaction(payload, sizeof(payload));
+          } else {
+            // LA expected MOSI bytes while CS is low: 01 3C C3 12 34
+            uint8_t payload[] = {0x3C, 0xC3, 0x12, 0x34};
+            id(addr1).write_transaction(payload, sizeof(payload));
+          }
