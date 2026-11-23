@@ -1,0 +1,121 @@
+# TMC5130 Full Feature Test
+esphome:
+  name: tmc5130-stepper
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+spi:
+  clk_pin: GPIO12
+  miso_pin: GPIO13
+  mosi_pin: GPIO11
+
+stepper:
+  - platform: tmc5130
+    id: motor
+    cs_pin: GPIO10
+    enable_pin: GPIO17
+    max_speed: 2000 steps/s
+    acceleration: 5000 steps/s^2
+    deceleration: 5000 steps/s^2
+    rsense: 0.11
+    rms_current: 1700
+    hold_current_percent: 50
+    microsteps: 256
+    stealthchop: true
+    tcool_threshold: 500
+
+# Button to trigger movements
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Boot Button"
+    on_press:
+      then:
+        - logger.log: "Button pressed - moving to next position"
+        - stepper.set_target:
+            id: motor
+            target: !lambda |-
+              static int positions[] = {0, 3200, 6400, 12800, 0};
+              static int idx = 0;
+              idx = (idx + 1) % 5;
+              ESP_LOGI("test", "Moving to position %d", positions[idx]);
+              return positions[idx];
+
+interval:
+  # Log motor status every second
+  - interval: 1s
+    then:
+      - lambda: |-
+          ESP_LOGI("motor", "Position: %d, Target: %d",
+                   id(motor).current_position,
+                   id(motor).target_position);
+
+  # Automatic back-and-forth every 10 seconds
+  - interval: 10s
+    then:
+      - logger.log: "Auto move cycle"
+      - stepper.set_target:
+          id: motor
+          target: !lambda |-
+            static bool forward = false;
+            forward = !forward;
+            return forward ? 6400 : 0;
+
+# Number control for speed adjustment
+number:
+  - platform: template
+    name: "Motor Speed"
+    id: motor_speed
+    min_value: 100
+    max_value: 10000
+    step: 100
+    initial_value: 2000
+    optimistic: true
+    set_action:
+      - stepper.set_speed:
+          id: motor
+          speed: !lambda "return x;"
+      - logger.log:
+          format: "Speed set to %.0f steps/s"
+          args: ['x']
+
+  - platform: template
+    name: "Target Position"
+    id: target_pos
+    min_value: -50000
+    max_value: 50000
+    step: 100
+    initial_value: 0
+    optimistic: true
+    set_action:
+      - stepper.set_target:
+          id: motor
+          target: !lambda "return (int)x;"
+
+button:
+  - platform: template
+    name: "Stop Motor"
+    on_press:
+      - stepper.set_target:
+          id: motor
+          target: !lambda "return id(motor).current_position;"
+
+  - platform: template
+    name: "Home (Reset to 0)"
+    on_press:
+      - stepper.report_position:
+          id: motor
+          position: 0
+      - stepper.set_target:
+          id: motor
+          target: 0

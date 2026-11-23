@@ -1,0 +1,36 @@
+# TMC5130 Raw SPI Test
+esphome:
+  name: tmc5130-test
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+spi:
+  clk_pin: GPIO12
+  miso_pin: GPIO13
+  mosi_pin: GPIO11
+
+spi_device:
+  id: tmc5130_raw
+  cs_pin: GPIO10
+  spi_mode: MODE3
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          // Read the IOIN register. The second frame clocks out the reply.
+          uint8_t frame[] = {0x04, 0, 0, 0, 0};
+          id(tmc5130_raw).enable();
+          id(tmc5130_raw).write_array(frame, sizeof(frame));
+          id(tmc5130_raw).disable();
+          id(tmc5130_raw).enable();
+          id(tmc5130_raw).transfer_array(frame, sizeof(frame));
+          id(tmc5130_raw).disable();
+          ESP_LOGD("tmc5130_raw", "IOIN version byte: 0x%02X", frame[1]);
