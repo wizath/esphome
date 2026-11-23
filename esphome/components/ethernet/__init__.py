@@ -126,6 +126,7 @@ ETHERNET_TYPES = {
     "W5500": EthernetType.ETHERNET_TYPE_W5500,
     "OPENETH": EthernetType.ETHERNET_TYPE_OPENETH,
     "DM9051": EthernetType.ETHERNET_TYPE_DM9051,
+    "LAN865X": EthernetType.ETHERNET_TYPE_LAN865X,
     "LAN8670": EthernetType.ETHERNET_TYPE_LAN8670,
 }
 
@@ -142,7 +143,7 @@ _PHY_TYPE_TO_DEFINE = {
     "LAN8670": "USE_ETHERNET_LAN8670",
 }
 
-SPI_ETHERNET_TYPES = ["W5500", "DM9051"]
+SPI_ETHERNET_TYPES = ["W5500", "DM9051", "LAN865X"]
 SPI_ETHERNET_DEFAULT_POLLING_INTERVAL = TimePeriodMilliseconds(milliseconds=10)
 
 emac_rmii_clock_mode_t = cg.global_ns.enum("emac_rmii_clock_mode_t")
@@ -319,6 +320,13 @@ CONFIG_SCHEMA = cv.All(
             "W5500": SPI_SCHEMA,
             "OPENETH": BASE_SCHEMA,
             "DM9051": SPI_SCHEMA,
+            "LAN865X": SPI_SCHEMA.extend(
+                {
+                    cv.Optional(CONF_CLOCK_SPEED, default="10MHz"): cv.All(
+                        cv.frequency, cv.int_range(int(1e6), int(25e6))
+                    ),
+                }
+            ),
             "LAN8670": RMII_SCHEMA,
         },
         upper=True,
@@ -395,7 +403,13 @@ async def to_code(config):
 
         cg.add_define("USE_ETHERNET_SPI")
         add_idf_sdkconfig_option("CONFIG_ETH_USE_SPI_ETHERNET", True)
-        add_idf_sdkconfig_option(f"CONFIG_ETH_SPI_ETHERNET_{config[CONF_TYPE]}", True)
+        if config[CONF_TYPE] == "LAN865X":
+            cg.add_define("USE_ETHERNET_LAN865X")
+            add_idf_component(name="espressif/lan865x", ref="0.2.0")
+        else:
+            add_idf_sdkconfig_option(
+                f"CONFIG_ETH_SPI_ETHERNET_{config[CONF_TYPE]}", True
+            )
     elif config[CONF_TYPE] == "OPENETH":
         cg.add_define("USE_ETHERNET_OPENETH")
         add_idf_sdkconfig_option("CONFIG_ETH_USE_OPENETH", True)
