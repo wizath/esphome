@@ -7,20 +7,40 @@ namespace hc138 {
 static const char *TAG = "hc138";
 
 spi::SPIDelegate *HC138Channel::register_device(spi::SPIClient *device, spi::SPIMode mode, spi::SPIBitOrder bit_order,
-                                                uint32_t data_rate, GPIOPin *cs_pin) {
+                                                uint32_t data_rate, GPIOPin *cs_pin, bool release_device,
+                                                bool write_only) {
   if (parent_ == nullptr) {
     ESP_LOGE(TAG, "Parent not set for channel %d", channel_);
     return nullptr;
   }
 
-  this->delegate_ = this->parent_->parent_->register_device(device, mode, bit_order, data_rate, cs_pin);
-  return new HC138SPIDelegate(this->channel_, this->parent_, this->delegate_);
+  auto existing = this->devices_.find(device);
+  if (existing != this->devices_.end())
+    return existing->second;
+
+  if (this->parent_->cs_ != nullptr)
+    cs_pin = this->parent_->cs_;
+  auto *delegate =
+      this->parent_->parent_->register_device(device, mode, bit_order, data_rate, cs_pin, release_device, write_only);
+  if (delegate == nullptr)
+    return nullptr;
+  auto *wrapper = new HC138SPIDelegate(this->channel_, this->parent_, delegate);
+  this->devices_.emplace(device, wrapper);
+  return wrapper;
+}
+
+void HC138Channel::unregister_device(spi::SPIClient *device) {
+  if (this->devices_.count(device) == 0)
+    return;
+  spi::SPIComponent::unregister_device(device);
+  this->parent_->parent_->unregister_device(device);
 }
 
 void HC138Component::setup() {
   a0_->setup();
   a1_->setup();
   a2_->setup();
+  this->select_channel(0);
 }
 
 void HC138Component::select_channel(uint8_t channel) {

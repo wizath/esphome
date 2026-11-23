@@ -29,7 +29,7 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_CHANNELS, default=[]): cv.ensure_list(
                 {
                     cv.Required(CONF_BUS_ID): cv.declare_id(HC138Channel),
-                    cv.Required(CONF_CHANNEL): cv.int_range(min=0, max=3),
+                    cv.Required(CONF_CHANNEL): cv.int_range(min=0, max=7),
                 }
             ),
             cv.Required(CONF_AO): pins.gpio_output_pin_schema,

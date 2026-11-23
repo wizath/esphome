@@ -17,11 +17,11 @@ class HC138Channel : public spi::SPIComponent {
   void setup() override{};
   void dump_config() override{};
   spi::SPIDelegate *register_device(spi::SPIClient *device, spi::SPIMode mode, spi::SPIBitOrder bit_order,
-                                    uint32_t data_rate, GPIOPin *cs_pin) override;
+                                    uint32_t data_rate, GPIOPin *cs_pin, bool release_device, bool write_only) override;
+  void unregister_device(spi::SPIClient *device) override;
 
  protected:
   uint8_t channel_;
-  spi::SPIDelegate *delegate_;
   HC138Component *parent_;
   friend class HC138SPIDelegate;
 };
@@ -34,6 +34,7 @@ class HC138Component : public Component,
   void set_a1(GPIOPin *pin) { a1_ = pin; }
   void set_a2(GPIOPin *pin) { a2_ = pin; }
   void setup() override;
+  float get_setup_priority() const override { return setup_priority::IO; }
   void select_channel(uint8_t channel);
 
  protected:
@@ -52,6 +53,7 @@ class HC138SPIDelegate : public spi::SPIDelegate {
   void transfer(uint8_t *data, size_t length) override;
   uint8_t transfer(uint8_t data) override;
   void write(uint16_t data, size_t bits) override;
+  void write16(uint16_t data) override { this->parent_delegate_->write16(data); }
   void read_array(uint8_t *data, size_t length) override;
   void write_array(const uint8_t *data, size_t length) override;
   void begin_transaction() override;

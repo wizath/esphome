@@ -1,0 +1,46 @@
+esphome:
+  name: hc138-test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+spi:
+  id: physical_spi
+  clk_pin: GPIO18
+  miso_pin: GPIO19
+  mosi_pin: GPIO23
+
+hc138:
+  spi_id: physical_spi
+  cs_pin: GPIO27
+  a0: GPIO25
+  a1: GPIO26
+  a2: GPIO32
+  channels:
+    - bus_id: channel_0
+      channel: 0
+    - bus_id: channel_7
+      channel: 7
+
+spi_device:
+  - id: first_device
+    spi_id: channel_0
+    spi_mode: MODE0
+    release_device: true
+  - id: last_device
+    spi_id: channel_7
+    spi_mode: MODE3
+    release_device: true
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          id(first_device).enable();
+          id(first_device).write_byte(0x55);
+          id(first_device).disable();
+          id(last_device).enable();
+          id(last_device).write_byte(0xAA);
+          id(last_device).disable();
